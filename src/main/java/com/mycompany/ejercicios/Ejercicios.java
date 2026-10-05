@@ -29,6 +29,18 @@ import java.util.List;
 import java.util.Scanner;
 import java.util.stream.Stream;
 import java.util.Arrays;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import org.w3c.dom.DOMException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 /**
  *
@@ -40,11 +52,16 @@ public class Ejercicios {
     
     public static void mainEjercicios(){
         //De aqui llamamos a los ejercicios
-        ejercicio11();
-        ejercicio12();
-        ejercicio21();
-        ejercicio22();
-        ejercicio
+        //ejercicio11();
+        //ejercicio12();
+        //ejercicio21();
+        //ejercicio22();
+        //ejercicio31();
+        //ejercicio32();
+        //ejercicio33();
+        //ejercicio41();
+        ejercicio42();
+        
     }
     
     private static double calcularMedia(String[] nums){
@@ -259,41 +276,25 @@ public class Ejercicios {
         // Usamos try-with-resources porque el Stream de Files.walk debe cerrarse para liberar los descriptores de archivo
         try (Stream<Path> rutas = Files.walk(directorioRaiz)) {
             
-            long totalLineas = rutas
-                // 1. Filtramos para asegurarnos de que es un fichero normal y no un directorio
-                .filter(Files::isRegularFile) 
-                
-                // 2. Filtramos por extensión (.log o .txt)
-                .filter(p -> {
+            long totalLineas = rutas.filter(Files::isRegularFile).filter(p -> {
                     String nombre = p.getFileName().toString().toLowerCase();
                     return nombre.endsWith(".txt") || nombre.endsWith(".log");
-                })
-                
-                // 3. Filtramos por fecha de modificación (últimas 24 horas)
-                .filter(p -> {
+                }).filter(p -> {
                     try {
                         FileTime ultimaModificacion = Files.getLastModifiedTime(p);
                         return ultimaModificacion.toInstant().isAfter(limite24Horas);
                     } catch (IOException e) {
                         return false; // Si no podemos leer los atributos, lo descartamos
                     }
-                })
-                
-                // Opcional: peek nos permite "espiar" el stream para imprimir por pantalla los ficheros que han pasado los filtros
-                .peek(p -> System.out.println(" -> Fichero válido encontrado: " + p.getFileName()))
-                
-                // 4. Transformamos cada Path en su número de líneas (mapeo a long)
+                })                
                 .mapToLong(p -> {
-                    // Files.lines también devuelve un Stream que debe cerrarse
                     try (Stream<String> lineas = Files.lines(p)) {
-                        return lineas.count(); // Contamos las líneas del fichero
+                        return lineas.count();
                     } catch (IOException e) {
                         System.err.println("    Error al leer el fichero: " + p.getFileName());
                         return 0L;
                     }
                 })
-                
-                // 5. Sumamos todos los conteos
                 .sum();
 
             System.out.println("Total de líneas de texto contadas en los ficheros encontrados: " + totalLineas);
@@ -303,13 +304,12 @@ public class Ejercicios {
         }
     }
     
-    private static List<Producto> escrituraGson(List<Producto> inventario, String nombreArchivo, Gson gson){
+    private static void escrituraGson(List<Producto> inventario, String nombreArchivo, Gson gson){
         try (FileWriter writer = new FileWriter(nombreArchivo)) {
             gson.toJson(inventario, writer);
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }
-        return inventario;
     }
     
     private static List<Producto> lecturaGson(String nombreArchivo, Gson gson){
@@ -333,7 +333,7 @@ public class Ejercicios {
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-        inventario = escrituraGson(inventario, archivoJson, gson);
+        escrituraGson(inventario, archivoJson, gson);
 
         List<Producto> productosRecuperados = lecturaGson(archivoJson, gson);
         
@@ -342,7 +342,90 @@ public class Ejercicios {
         }
     }
     
+    public static void parteDOM(File archivo) {
+        try {
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            DocumentBuilder builder = factory.newDocumentBuilder();
+            Document doc = builder.parse(archivo);
+
+            NodeList listaFacturas = doc.getElementsByTagName("factura");
+            double totalImportes = 0;
+
+            for (int i = 0; i < listaFacturas.getLength(); i++) {
+                Element factura = (Element) listaFacturas.item(i);
+                
+                String importeStr = factura.getElementsByTagName("importe").item(0).getTextContent();
+                totalImportes += Double.parseDouble(importeStr);
+
+                Element etiquetaPagada = doc.createElement("PAGADA");
+                etiquetaPagada.appendChild(doc.createTextNode("SI"));
+                factura.appendChild(etiquetaPagada);
+            }
+            System.out.println("Total de las facturas: " + totalImportes);
+        } catch (IOException | NumberFormatException | ParserConfigurationException | DOMException | SAXException e) {
+            e.getMessage();
+        }
+    }
+    
+    static class ManejadorFacturas extends DefaultHandler {
+        
+        private boolean leyendoImporte = false;
+        private double totalImportes = 0;
+
+        //metodo para devolver el total cuando el parser termine
+        public double getTotalImportes() {
+            return totalImportes;
+        }
+
+        //le decimos cuando empieza el elemento que nos interesa, en este caso, importe y encendemos el lector
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) {
+            if (qName.equalsIgnoreCase("importe")) {
+                leyendoImporte = true;
+            }
+        }
+
+        //Aqui va lo que leemos
+        @Override
+        public void characters(char[] ch, int start, int length) {
+            if (leyendoImporte) {
+                //convertimos los caracteres leidos a texto y lo sumamos
+                String importeStr = new String(ch, start, length);
+                totalImportes += Double.parseDouble(importeStr);
+                
+                leyendoImporte = false; //apagamos el interruptor de lectura
+            }
+        }
+        
+        //En realidad para estructuras complejas tambien hay que cerrar 
+        //la lectura aqui en lugar de arriba pero como en este caso es una etiqueta sencilla no hace falta.
+    }
+    
+    public static void parteSAX(File archivo) {
+        try {
+            //esto prepara y contruye el lector
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            //el objeto que abre el xml y lo recorre, esto lanza eventos a la clase DefaultHandle, la cual hemos sobreescrito arriba.
+            SAXParser saxParser = factory.newSAXParser();
+
+            //la clase que maneja lo que hay dentro del XML
+            ManejadorFacturas handler = new ManejadorFacturas();
+            
+            //procesamos el archivo
+            saxParser.parse(archivo, handler);
+
+            System.out.println("Total de las facturas (calculado con SAX): " + handler.getTotalImportes());
+
+        } catch (IOException | ParserConfigurationException | SAXException e) {
+            e.getMessage();
+        }
+    }
+    
     private static void ejercicio42(){
+        File archivoXML = new File("ejercicio4/facturas.xml");
+
+        parteDOM(archivoXML);
+        parteSAX(archivoXML);
     }
 
 }
