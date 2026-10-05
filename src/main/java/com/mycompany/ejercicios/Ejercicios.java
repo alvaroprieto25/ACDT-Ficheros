@@ -392,13 +392,16 @@ public class Ejercicios {
                 //convertimos los caracteres leidos a texto y lo sumamos
                 String importeStr = new String(ch, start, length);
                 totalImportes += Double.parseDouble(importeStr);
-                
-                leyendoImporte = false; //apagamos el interruptor de lectura
             }
         }
         
-        //En realidad para estructuras complejas tambien hay que cerrar 
-        //la lectura aqui en lugar de arriba pero como en este caso es una etiqueta sencilla no hace falta.
+        //aqui cerramos el elemento
+        @Override
+        public void endElement(String uri, String localName, String qName) {
+            if (qName.equalsIgnoreCase("importe")) {
+                leyendoImporte = false;
+            }
+        }
     }
     
     public static void parteSAX(File archivo) {
