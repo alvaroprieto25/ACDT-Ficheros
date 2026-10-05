@@ -34,6 +34,11 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -240,20 +245,16 @@ public class Ejercicios {
             int idLeido = raf.readInt();
             double salarioActual = raf.readDouble();
             
-            System.out.println("\n--- Consultando ID " + idBuscado + " ---");
             System.out.println("ID: " + idLeido + " | Salario actual: " + salarioActual);
-
-            // 3. MODIFICAR EL SALARIO DEL EMPLEADO ID = 3
-            System.out.print("\nIntroduce el nuevo salario para el empleado " + idBuscado + ": ");
+            System.out.print("Introduce el nuevo salario: ");
             double nuevoSalario = scanner.nextDouble();
 
-            // Posicionamos el puntero exactamente donde empieza el double del salario para el ID 3
+            //Posicionamos el puntero exactamente donde empieza el double del salario para el ID 3
             // Esto es: inicio del registro (24) + tamaño del ID (4) = byte 28
             raf.seek(posicionBuscada + 4);
             raf.writeDouble(nuevoSalario);
             System.out.println("¡Salario modificado con éxito directamente en disco!");
 
-            // 4. COMPROBACIÓN POSTERIOR
             raf.seek(posicionBuscada);
             System.out.println("\nComprobando registro actualizado...");
             System.out.println("ID: " + raf.readInt() + " | Nuevo Salario: " + raf.readDouble());
@@ -275,7 +276,6 @@ public class Ejercicios {
         // Files.walk crea un Stream perezoso (lazy) con el árbol de directorios
         // Usamos try-with-resources porque el Stream de Files.walk debe cerrarse para liberar los descriptores de archivo
         try (Stream<Path> rutas = Files.walk(directorioRaiz)) {
-            
             long totalLineas = rutas.filter(Files::isRegularFile).filter(p -> {
                     String nombre = p.getFileName().toString().toLowerCase();
                     return nombre.endsWith(".txt") || nombre.endsWith(".log");
@@ -291,16 +291,16 @@ public class Ejercicios {
                     try (Stream<String> lineas = Files.lines(p)) {
                         return lineas.count();
                     } catch (IOException e) {
-                        System.err.println("    Error al leer el fichero: " + p.getFileName());
+                        System.err.println(e.getMessage());
                         return 0L;
                     }
                 })
                 .sum();
 
-            System.out.println("Total de líneas de texto contadas en los ficheros encontrados: " + totalLineas);
+            System.out.println("Total de líneas: " + totalLineas);
 
         } catch (IOException e) {
-            System.err.println("Error crítico al recorrer el árbol de directorios: " + e.getMessage());
+            System.err.println(e.getMessage());
         }
     }
     
@@ -342,12 +342,27 @@ public class Ejercicios {
         }
     }
     
+    public static void escrituraDOM(Document doc){
+        try {
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+
+            //Esto es una clase envoltorio para poder escribir
+            StreamResult result = new StreamResult(new File("ejercicio4/facturas.xml")); 
+
+            transformer.transform(source, result);
+        }catch(TransformerException e){
+            System.out.println(e.getMessage());
+        }
+    }
+    
     public static void parteDOM(File archivo) {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(archivo);
-
+            
             NodeList listaFacturas = doc.getElementsByTagName("factura");
             double totalImportes = 0;
 
@@ -361,6 +376,7 @@ public class Ejercicios {
                 etiquetaPagada.appendChild(doc.createTextNode("SI"));
                 factura.appendChild(etiquetaPagada);
             }
+            escrituraDOM(doc);
             System.out.println("Total de las facturas: " + totalImportes);
         } catch (IOException | NumberFormatException | ParserConfigurationException | DOMException | SAXException e) {
             e.getMessage();
@@ -408,7 +424,8 @@ public class Ejercicios {
         try {
             //esto prepara y contruye el lector
             SAXParserFactory factory = SAXParserFactory.newInstance();
-            //el objeto que abre el xml y lo recorre, esto lanza eventos a la clase DefaultHandle, la cual hemos sobreescrito arriba.
+            //el objeto que abre el xml y lo recorre, esto lanza eventos a la clase DefaultHandle, 
+            //la cual hemos sobreescrito arriba.
             SAXParser saxParser = factory.newSAXParser();
 
             //la clase que maneja lo que hay dentro del XML
