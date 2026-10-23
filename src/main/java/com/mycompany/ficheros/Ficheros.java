@@ -6,6 +6,7 @@ package com.mycompany.ficheros;
 
 
 import static com.mycompany.ejercicios.Ejercicios.mainEjercicios;
+import generador.datos.examen.GeneradorDatosExamen;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -63,6 +64,7 @@ public class Ficheros {
         //Lectura binaria
         //leerFicheroBinario(archivo);
         */
+        //GeneradorDatosExamen.main(args);
     }
     
     public static File crearCarpeta(String nombre){

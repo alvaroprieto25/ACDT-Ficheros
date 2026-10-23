@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flota>
+    <equipo id="EQ-101">
+        <nombre>Torno CNC Haaz</nombre>
+        <categoria>Mecanizado</categoria>
+    </equipo>
+    <equipo id="EQ-102">
+        <nombre>Fresadora Universal Milko</nombre>
+        <categoria>Mecanizado</categoria>
+    </equipo>
+    <equipo id="EQ-103">
+        <nombre>Soldadora TIG Fronius</nombre>
+        <categoria>Soldadura</categoria>
+    </equipo>
+    <equipo id="EQ-104">
+        <nombre>Carretilla Elevadora Linde</nombre>
+        <categoria>Logistica</categoria>
+    </equipo>
+    <equipo id="EQ-105">
+        <nombre>Prensa Hidraulica 50T</nombre>
+        <categoria>Conformado</categoria>
+    </equipo>
+</flota>

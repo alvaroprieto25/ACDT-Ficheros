@@ -364,6 +364,7 @@ public class Ejercicios {
             Document doc = builder.parse(archivo);
             
             NodeList listaFacturas = doc.getElementsByTagName("factura");
+            System.out.println(listaFacturas.item(0));
             double totalImportes = 0;
 
             for (int i = 0; i < listaFacturas.getLength(); i++) {
@@ -445,7 +446,7 @@ public class Ejercicios {
         File archivoXML = new File("ejercicio4/facturas.xml");
 
         parteDOM(archivoXML);
-        parteSAX(archivoXML);
+        //parteSAX(archivoXML);
     }
 
 }
